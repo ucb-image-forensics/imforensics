@@ -9,26 +9,24 @@ import scipy.io as sio
 
 import sys, os
 
-def main():
-    directory = sys.argv[1]
-    raw_basic_metrics = np.empty([0, 9])
-    aggregate_metrics = np.empty([0, 2])
+def generate_raw_data(directory, output_file):
+    ela_data = np.empty((0,), dtype=object)
 
     for filename in iterate_with_progress(os.listdir(directory)):
         ela = ELA(os.path.join(directory, filename))
-
-        metrics = BasicMetricsELA(ela)
-        raw_basic_metrics = np.append(raw_basic_metrics,
-            np.array([metrics.metrics]), axis=0)
-        aggregate_metrics = np.append(aggregate_metrics,
-            [[metrics.aggregate_mean, metrics.aggregate_variance]], axis=0)
+        sample = {'filename': filename,
+                  'ela_image': ela.ela_image_scaled}
+        ela_data = np.append(ela_data, sample)
 
     output = {
-        'raw_basic_metrics': raw_basic_metrics,
-        'aggregate_metrics': aggregate_metrics
+        'ela_data': ela_data,
     }
 
-    sio.savemat(os.path.join(directory, 'output.mat'), output)
+    sio.savemat(os.path.join(directory, output_file), output)
+
+def main():
+    directory = sys.argv[1]
+    generate_raw_data(directory, 'output.mat')
 
 if __name__ == '__main__':
     main()
