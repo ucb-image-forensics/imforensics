@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import numpy as np
 import matlab
 
-numpy2matlb_type = {
+numpy2matlab_type = {
     np.int64         : matlab.int64,
     np.bool_         : matlab.int8,
     np.int8          : matlab.int8,
@@ -19,9 +19,9 @@ numpy2matlb_type = {
     np.float64       : matlab.double
 }
 
-def numpy2matlb(np_arr):
+def numpy2matlab(np_arr):
     np_type = np_arr.dtype.type
-    ml_arr_klass = numpy2matlb_type.get(np_type, None)
+    ml_arr_klass = numpy2matlab_type.get(np_type, None)
     if not ml_arr_klass:
         raise ValueError('Cannot convert numpy type {0} to matlab array.'.format(np_type))
     ml_arr = ml_arr_klass(np_arr.flatten().tolist())
