@@ -1,2 +1,2 @@
 from .exif import ExifExtractor
-from .exif_processls import ExifReport
+from .exif_process import ExifReport
