@@ -7,7 +7,7 @@ class CopyMoveDetector(object):
     def __init__(self, matlab_engine):
         self.matlab_engine = matlab_engine
         ml_path = op.join(op.dirname(op.realpath(__file__)), 'matlab')
-        self.matlab_engine.addpath(ml_path)
+        self.matlab_engine.addpath(self.matlab_engine.genpath(ml_path))
 
     def detect(self, img_file):
         result = self.matlab_engine.copymove_detector(img_file)
