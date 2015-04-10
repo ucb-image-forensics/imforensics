@@ -21,14 +21,15 @@ class ExifReport(object):
                 'height': self.h,
             },
             'results': {
-                'has_software_manipulation': self.has_software_modification(),
-                'has_camera_attrs': self.has_all_camera_info() and self.has_all_datetime_attributes(),
-                'has_size_mismatch': self.has_exif_size_mismatch(),
-                'has_crop_resize': self.is_cropped_or_resized(),
+                'has_software_manipulation': self.has_software_modification,
+                'has_camera_attrs': self.has_all_camera_info and self.has_all_datetime_attributes,
+                'has_size_mismatch': self.has_exif_size_mismatch,
+                'has_crop_resize': self.is_cropped_or_resized,
             },
             'exif': self.exif_data,
         }
 
+    @property
     def has_all_datetime_attributes(self):
         """Returns True if all datetime attributes that we expect are there."""
         for key, value in self.exif_data['timestamp'].items():
@@ -36,6 +37,7 @@ class ExifReport(object):
                 return False
         return True
 
+    @property
     def has_software_modification(self):
         """Returns True if we detect a software modification."""
         if 'Software' not in self.exif_data['software'] or not self.exif_data['software']['Software']:
@@ -46,6 +48,7 @@ class ExifReport(object):
         found = sum([int(s in software) for s in known_software_strings])
         return found > 0
 
+    @property
     def has_exif_size_mismatch(self):
         """Return True if size of image mismatches exif size."""
 
@@ -55,10 +58,12 @@ class ExifReport(object):
             return False
         return not (self.w == ex_w and self.h == ex_h)
 
+    @property
     def is_cropped_or_resized(self):
         """Return True if image has been resized or cropped."""
         return not (self.w % 8 == 0 and self.h % 8 == 0)
 
+    @property
     def has_all_camera_info(self):
         """Return True if it has all the camera info we expect."""
         for key, value in self.exif_data['camera'].items():
