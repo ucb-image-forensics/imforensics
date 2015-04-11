@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import numpy as np
 import matlab
+import imghdr
 
 numpy2matlab_type = {
     np.int64         : matlab.int64,
@@ -27,3 +28,6 @@ def numpy2matlab(np_arr):
     ml_arr = ml_arr_klass(np_arr.flatten().tolist())
     ml_arr.reshape(np_arr.shape)
     return ml_arr
+
+def is_jpeg(img_path):
+    imghdr.what(img_path) == 'jpeg'
