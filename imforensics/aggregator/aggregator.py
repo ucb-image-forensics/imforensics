@@ -7,8 +7,7 @@ class Aggregator(object):
     def __init__(self, matlab_engine):
         self.matlab_engine = matlab_engine
         ml_path = op.join(op.dirname(op.realpath(__file__)), 'matlab')
-        self.matlab_engine.addpath(ml_path)
-        self.matlab_engine.addpath(op.join(ml_path,'lib'))
+        self.matlab_engine.addpath(self.matlab_engine.genpath(ml_path))
 
-    def detect(self, ):
-        result = self.matlab_engine.aggregaor(img_file)
+    def aggregate(self, X_cm, X_ela, X_ho):
+        return self.matlab_engine.aggregator(X_cm, X_ela, X_ho)

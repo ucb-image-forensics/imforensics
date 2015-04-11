@@ -1,1 +1,1 @@
-from detector import Aggregator
+from aggregator import Aggregator
