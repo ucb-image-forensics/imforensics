@@ -30,4 +30,4 @@ def numpy2matlab(np_arr):
     return ml_arr
 
 def is_jpeg(img_path):
-    imghdr.what(img_path) == 'jpeg'
+    return imghdr.what(img_path) == 'jpeg'
