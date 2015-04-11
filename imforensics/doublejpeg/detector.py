@@ -10,4 +10,4 @@ class DoubleJPEGCompressionDetector(object):
         self.matlab_engine.addpath(self.matlab_engine.genpath(ml_path))
 
     def detect(self, img_file):
-        self.matlab_engine.djc_detector(img_file)
+        self.matlab_engine.djc_detector(img_file, nargout=0)
