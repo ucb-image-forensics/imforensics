@@ -41,16 +41,20 @@ function output = copymove_detector( image_path )
     disp(strcat('NN time: ', num2str(cputime - start_time)));
     
     %% Unique matches
-    matches = unique_matches(matches);
-    matches = partition_matches(matches);
+    if size(matches.source, 1) > 1
+        matches = unique_matches(matches);
+        matches = partition_matches(matches);
+        
+        %% RANSAC ESTIMATION
+        disp('RANSAC..');
+        RANSAC_ITERS = 15000;
+        start_time = cputime;
+        RANSAC_ERR_THRESH = 3;
+        r_matches = ransac_le_means(matches, RANSAC_ITERS, RANSAC_ERR_THRESH);
+    else
+        r_matches = matches;
+    end
     
-    %% RANSAC ESTIMATION
-    disp('RANSAC..');
-    RANSAC_ITERS = 15000;
-    start_time = cputime;
-    RANSAC_ERR_THRESH = 3;
-    
-    r_matches = ransac_le_means(matches, RANSAC_ITERS, RANSAC_ERR_THRESH);
     disp(strcat('RANSAC time: ', num2str(cputime - start_time)));
 
     if resize_factor ~= 1

@@ -18,5 +18,10 @@ function output = ransac_le_means(matches, iters, error_threshold )
     end
     
     output = struct('source', sources, 'target', targets);
-    output = unique_matches(partition_matches(unique_matches(output)));
+    if size(output.source, 1) > 1
+        output = unique_matches(output)
+        if size(output.source, 1) > 1
+            output = unique_matches(partition_matches(output));
+        end
+    end
 end
