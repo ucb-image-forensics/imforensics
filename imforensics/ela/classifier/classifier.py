@@ -4,9 +4,8 @@ import os.path as op
 
 from sklearn.externals import joblib
 
-from ela import ELA
-from ela.metrics import BasicMetricsELA
-
+from ..ela import ELA
+from ..metrics import BasicMetricsELA
 
 class ELAClassifier(object):
     SERIALIZED_FILE = op.join(op.dirname(op.realpath(__file__)),
