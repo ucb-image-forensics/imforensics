@@ -21,7 +21,6 @@ class ELAClassifier(object):
     def predict(self, ela, raw_output=False):
         feature = self._build_feature(ela)
         result = bool(self.classifier.predict(feature)[0])
-        import ipdb; ipdb.set_trace()
         return result if raw_output else \
             'Manipulated' if result else 'Authentic'
 
