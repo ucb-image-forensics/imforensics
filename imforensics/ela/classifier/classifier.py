@@ -26,6 +26,11 @@ class ELAClassifier(object):
     NOT_SURE_FAKE_MSG = "The image may be manipulated."
     SURE_FAKE_MSG = "The image is surely manipulated."
 
+    SURE_AUTH_FLAG = 0
+    NOT_SURE_AUTH_FLAG = 1
+    NOT_SURE_FAKE_FLAG = 2
+    SURE_FAKE_FLAG = 3
+
     def __init__(self):
         self.classifier = joblib.load(ELAClassifier.SERIALIZED_FILE)
 
@@ -47,6 +52,18 @@ class ELAClassifier(object):
             return ELAClassifier.NOT_SURE_FAKE_MSG
         else:
             return ELAClassifier.SURE_FAKE_MSG
+
+    def predict_flag(self, ela):
+        score = self.decision_function(ela)
+        print score
+        if score < ELAClassifier.N2D1:
+            return ELAClassifier.SURE_AUTH_FLAG
+        elif score < 0.0:
+            return ELAClassifier.NOT_SURE_AUTH_FLAG
+        elif score < ELAClassifier.P1D1:
+            return ELAClassifier.NOT_SURE_FAKE_FLAG
+        else:
+            return ELAClassifier.SURE_FAKE_FLAG
 
     def _build_feature(self, ela):
         metrics = BasicMetricsELA(ela)
