@@ -4,7 +4,6 @@ import os
 
 import numpy as np
 from PIL import Image, ImageChops, ImageEnhance
-from scipy import ndimage
 from scipy.misc import imsave
 from scipy.ndimage.filters import gaussian_filter
 
@@ -24,58 +23,18 @@ class ELA(object):
         self._run_ela()
 
     @property
-    def data(self):
-        return self._ela_image_data
+    def ela_data(self):
+        return self._ela_data
 
     @property
-    def data_grayscale(self):
-        if not hasattr(self, '_data_grayscale'):
-            self._data_grayscale = rgb2gray(self._ela_image_data)
-        return self._data_grayscale
+    def image_data(self):
+        return self._image_data
 
     @property
-    def data_one_channel(self):
-        if not hasattr(self, '_data_one_channel'):
-            self._data_one_channel = np.sqrt(
-                    self._ela_image_data[:, :, 0]**2
-                    + self._ela_image_data[:, :, 1]**2
-                    + self._ela_image_data[:, :, 2]**2
-                )
-        return self._data_one_channel
-
-    @property
-    def mask_grayscale(self):
-        if not hasattr(self, '_mask_grayscale'):
-            sigma = 5
-            self._mask_grayscale = ndimage.filters.gaussian_filter(self.data_grayscale,
-                                                                   sigma, order=1)
-        return self._mask_grayscale
-
-    @property
-    def mask_one_channel(self):
-        if not hasattr(self, '_mask_one_channel'):
-            sigma = 5
-            self._mask_one_channel = ndimage.filters.gaussian_filter(self.data_one_channel,
-                                                                     sigma, order=1)
-        return self._mask_one_channel
-
-    @property
-    def combined_filter_grayscale(self):
-        if not hasattr(self, '_combined_filter_grayscale'):
-            masked = self.data_grayscale * self.mask_grayscale
-            masked = masked.clip(min=0)
-            scale = 255.0 / np.max(masked)
-            self._combined_filter_grayscale = masked * scale
-        return self.combined_filter_grayscale
-
-    @property
-    def combined_filter_one_channel(self):
-        if not hasattr(self, '_combined_filter_one_channel'):
-            masked = self.data_one_channel * self.mask_one_channel
-            masked = masked.clip(min=0)
-            scale = 255.0 / np.max(masked)
-            self._combined_filter_one_channel = masked * scale
-        return self._combined_filter_one_channel
+    def image_data_gray_scale(self):
+        if not hasattr(self, '_image_data_gray_scale'):
+            self._image_data_gray_scale = rgb2gray(self._image_data)
+        return self._image_data_gray_scale
 
     @property
     def ela_image_scaled(self):
@@ -87,31 +46,68 @@ class ELA(object):
             self._ela_image_scaled = np.array(scaled_im)
         return self._ela_image_scaled
 
+    @property
+    def low_freq_mask(self):
+        if not hasattr(self, '_low_freq_mask'):
+            low_passed = gaussian_filter(self.image_data_gray_scale, 5)
+            abs_diff = np.abs(self.image_data_gray_scale - low_passed)
+            clipped = abs_diff * (abs_diff < np.percentile(abs_diff, 23))
+            scaled = clipped * (255.0 / np.max(clipped))
+            blurred = gaussian_filter(scaled, 10)
+            self._low_freq_mask = \
+                ((blurred > np.percentile(blurred, 50)) * 64).astype(np.uint8)
+        return self._low_freq_mask
+
+    @property
+    def ela_mask(self):
+        if not hasattr(self, '_ela_mask'):
+            ela_data_magnitude = np.sqrt(self.ela_data[:, :, 0]**2 +
+                                         self.ela_data[:, :, 1]**2 +
+                                         self.ela_data[:, :, 2]**2)
+            ela_mask = (ela_data_magnitude > np.percentile(ela_data_magnitude, 90))\
+                       .astype(np.uint8) * ela_data_magnitude
+            ela_mask = gaussian_filter(ela_mask, 10)
+            ela_mask = ela_mask * (255.0 / np.max(ela_mask))
+            self._ela_mask = ((ela_mask > np.percentile(ela_mask, 70)) * 128)\
+                .astype(np.uint8)
+        return self._ela_mask
+
+    def save_suspect_region(self):
+        # Create input image with opaque alpha channel.
+        given_image = self._image.copy()
+        given_image.putalpha(Image.new('L', given_image.size, color=255))
+
+        # Create ela mask image.
+        ela_mask_alpha = Image.fromarray(self.ela_mask).convert('L')
+        ela_mask_image = Image.merge('RGBA', [Image.new('L', ela_mask_alpha.size, color=255),
+                                              Image.new('L', ela_mask_alpha.size, color=0),
+                                              Image.new('L', ela_mask_alpha.size, color=0),
+                                              ela_mask_alpha])
+
+        # Create low freq mask image.
+        low_freq_mask_alpha = Image.fromarray(self.low_freq_mask).convert('L')
+        low_freq_mask_image = Image.merge('RGBA', [Image.new('L', low_freq_mask_alpha.size, color=0),
+                                                   Image.new('L', low_freq_mask_alpha.size, color=0),
+                                                   Image.new('L', low_freq_mask_alpha.size, color=255),
+                                                   low_freq_mask_alpha])
+
+        # Create combined mask.
+        combined_mask = Image.alpha_composite(ela_mask_image, low_freq_mask_image)
+
+        # Put mask on image.
+        Image.alpha_composite(given_image, combined_mask)\
+             .save('{0}.ela_suspect.jpeg'.format(self.filename),
+                   format='JPEG')
+
     def save_ela_image(self):
         imsave('{0}.ela.png'.format(self.filename),
                 self.ela_image_scaled)
-
-    def save_suspect_region(self):
-        given_image = self._image.copy()
-        mask = gaussian_filter(self.data_one_channel, 10)
-        mask = mask * (255.0 / np.max(mask))
-        mask = (mask > np.percentile(mask, 66)) * 32
-        mask = mask.astype(np.int8)
-        alpha = Image.fromarray(mask).convert('L')
-        given_image.putalpha(alpha)
-        alpha_mask = Image.merge('RGBA', [Image.new('L', alpha.size, color=255),
-                                          Image.new('L', alpha.size, color=128),
-                                          Image.new('L', alpha.size, color=0),
-                                          alpha])
-        Image.alpha_composite(given_image, alpha_mask)\
-             .save('{0}.ela_suspect.jpeg'.format(self.filename),
-                   format='JPEG')
 
     def _run_ela(self):
         self._resave_first_image()
         self._resave_image()
         self._ela_image = ImageChops.difference(self._image, self._resaved_image)
-        self._ela_image_data = np.array(self._ela_image)
+        self._ela_data = np.array(self._ela_image)
 
     def _resave_image(self):
         resaved = self.filename + '.resaved.jpg'
@@ -123,4 +119,5 @@ class ELA(object):
         resaved = self.filename + '.r1.jpg'
         Image.open(self.filename).save(resaved, 'JPEG', quality=100)
         self._image = Image.open(resaved)
+        self._image_data = np.array(self._image)
         os.remove(resaved)
