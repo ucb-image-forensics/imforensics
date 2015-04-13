@@ -6,6 +6,7 @@ import numpy as np
 from PIL import Image, ImageChops, ImageEnhance
 from scipy import ndimage
 from scipy.misc import imsave
+from scipy.ndimage.filters import gaussian_filter
 
 from .util import rgb2gray
 
@@ -89,6 +90,22 @@ class ELA(object):
     def save_ela_image(self):
         imsave('{0}.ela.png'.format(self.filename),
                 self.ela_image_scaled)
+
+    def save_suspect_region(self):
+        given_image = self._image.copy()
+        mask = gaussian_filter(self.data_one_channel, 10)
+        mask = mask * (255.0 / np.max(mask))
+        mask = (mask > np.percentile(mask, 66)) * 32
+        mask = mask.astype(np.int8)
+        alpha = Image.fromarray(mask).convert('L')
+        given_image.putalpha(alpha)
+        alpha_mask = Image.merge('RGBA', [Image.new('L', alpha.size, color=255),
+                                          Image.new('L', alpha.size, color=128),
+                                          Image.new('L', alpha.size, color=0),
+                                          alpha])
+        Image.alpha_composite(given_image, alpha_mask)\
+             .save('{0}.ela_suspect.jpeg'.format(self.filename),
+                   format='JPEG')
 
     def _run_ela(self):
         self._resave_first_image()

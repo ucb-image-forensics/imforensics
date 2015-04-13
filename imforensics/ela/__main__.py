@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
-import sys
 import os
+import argparse
 
 import numpy as np
 import scipy.io as sio
@@ -45,10 +45,24 @@ def generate_raw_data(directory, output_file):
     sio.savemat(os.path.join(directory, output_file), output)
 
 def main():
-    directory = sys.argv[1]
+    parser = argparse.ArgumentParser(description='Error level analysis tool kit.')
+    parser.add_argument('input', type=str,
+                        help='target, a file or directory')
+    parser.add_argument('--raw_metrics', action="store_true",
+                        default=False, dest='raw_metrics',
+                        help='generate raw metrics.')
+    parser.add_argument('--aggregate_metrics', action="store_true",
+                        default=False, dest='aggregate_metrics',
+                        help='generate aggregate metrics.')
+    args = parser.parse_args()
+
     output_file = 'output.mat'
-    # generate_raw_data(directory, output_file)
-    generate_metrics(directory, output_file)
+    if args.raw_metrics:
+        generate_raw_data(args.input, output_file)
+    elif args.aggregate_metrics:
+        generate_metrics(args.input, output_file)
+    else:
+        ELA(args.input).save_suspect_region()
 
 if __name__ == '__main__':
     main()
