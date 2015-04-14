@@ -14,7 +14,7 @@ function overlay_feature_mask(feature_mask, img_path, suffix)
     imshow(E, 'InitialMag', 'fit');
     export_fig(gcf, [img_path suffix], '-native');
     clf
-    red = cat(3, ones(sz_F), zeros(sz_F), zeros(sz_F));
+    red = cat(3, ones(sz_F), 0.67 * ones(sz_F), zeros(sz_F));
     hold on
     h = imshow(red);
     hold off    
