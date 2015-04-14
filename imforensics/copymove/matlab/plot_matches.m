@@ -1,7 +1,7 @@
 function h = plot_matches( im, corresponding_points)
 %PLOT_MATCHES Summary of this function goes here
 %   Detailed explanation goes here
-    h = figure;
+    h = figure('visible', 'off');
     imshow(im);
     axis image; hold on;
     for i=1:size(corresponding_points.source, 1)
