@@ -54,8 +54,7 @@ class ELA(object):
             clipped = abs_diff * (abs_diff < np.percentile(abs_diff, 23))
             scaled = clipped * (255.0 / np.max(clipped))
             blurred = gaussian_filter(scaled, 10)
-            self._low_freq_mask = \
-                ((blurred > np.percentile(blurred, 50)) * 64).astype(np.uint8)
+            self._low_freq_mask = (blurred > np.percentile(blurred, 50)).astype(np.uint8)
         return self._low_freq_mask
 
     @property
@@ -68,36 +67,48 @@ class ELA(object):
                        .astype(np.uint8) * ela_data_magnitude
             ela_mask = gaussian_filter(ela_mask, 10)
             ela_mask = ela_mask * (255.0 / np.max(ela_mask))
-            self._ela_mask = ((ela_mask > np.percentile(ela_mask, 70)) * 128)\
-                .astype(np.uint8)
+            self._ela_mask = (ela_mask > np.percentile(ela_mask, 70)).astype(np.uint8)
         return self._ela_mask
 
-    def save_suspect_region(self):
+    def save_suspect_region(self, opaque=False, show_low_freq=False):
+        alpha = 255 if opaque else 128
+
         # Create input image with opaque alpha channel.
         given_image = self._image.copy()
         given_image.putalpha(Image.new('L', given_image.size, color=255))
 
-        # Create ela mask image.
-        ela_mask_alpha = Image.fromarray(self.ela_mask).convert('L')
-        ela_mask_image = Image.merge('RGBA', [Image.new('L', ela_mask_alpha.size, color=255),
-                                              Image.new('L', ela_mask_alpha.size, color=0),
-                                              Image.new('L', ela_mask_alpha.size, color=0),
-                                              ela_mask_alpha])
+        # Create low risk and high risk ela mask image.
+        high_risk_mask = np.logical_and(self.ela_mask, self.low_freq_mask).astype(np.uint8) * alpha
+        low_risk_mask = np.logical_xor(self.ela_mask, high_risk_mask).astype(np.uint8) * alpha
+
+        low_risk_mask_alpha = Image.fromarray(low_risk_mask).convert('L')
+        low_risk_mask_image = Image.merge('RGBA', [Image.new('L', low_risk_mask_alpha.size, color=255),
+                                                   Image.new('L', low_risk_mask_alpha.size, color=196),
+                                                   Image.new('L', low_risk_mask_alpha.size, color=0),
+                                                   low_risk_mask_alpha])
+
+        high_risk_mask_alpha = Image.fromarray(high_risk_mask).convert('L')
+        high_risk_mask_image = Image.merge('RGBA', [Image.new('L', high_risk_mask_alpha.size, color=255),
+                                                    Image.new('L', high_risk_mask_alpha.size, color=171),
+                                                    Image.new('L', high_risk_mask_alpha.size, color=0),
+                                                    high_risk_mask_alpha])
 
         # Create low freq mask image.
-        low_freq_mask_alpha = Image.fromarray(self.low_freq_mask).convert('L')
-        low_freq_mask_image = Image.merge('RGBA', [Image.new('L', low_freq_mask_alpha.size, color=0),
-                                                   Image.new('L', low_freq_mask_alpha.size, color=0),
-                                                   Image.new('L', low_freq_mask_alpha.size, color=255),
-                                                   low_freq_mask_alpha])
+        if show_low_freq:
+            low_freq_mask = np.logical_xor(self.low_freq_mask, high_risk_mask).astype(np.uint8) * alpha
+            low_freq_mask_alpha = Image.fromarray(low_freq_mask).convert('L')
+            low_freq_mask_image = Image.merge('RGBA', [Image.new('L', low_freq_mask_alpha.size, color=0),
+                                                       Image.new('L', low_freq_mask_alpha.size, color=0),
+                                                       Image.new('L', low_freq_mask_alpha.size, color=255),
+                                                       low_freq_mask_alpha])
 
-        # Create combined mask.
-        combined_mask = Image.alpha_composite(ela_mask_image, low_freq_mask_image)
-
-        # Put mask on image.
-        Image.alpha_composite(given_image, combined_mask)\
-             .save('{0}.ela_suspect.jpeg'.format(self.filename),
-                   format='JPEG')
+        # Create masked image.
+        masked_image = Image.alpha_composite(given_image, low_risk_mask_image)
+        masked_image = Image.alpha_composite(masked_image, high_risk_mask_image)
+        if show_low_freq:
+            masked_image = Image.alpha_composite(masked_image, low_freq_mask_image)
+        masked_image.save('{0}.ela_suspect.jpeg'.format(self.filename),
+                          format='JPEG')
 
     def save_ela_image(self):
         imsave('{0}.ela.png'.format(self.filename),
