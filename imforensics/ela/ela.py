@@ -52,7 +52,8 @@ class ELA(object):
             low_passed = gaussian_filter(self.image_data_gray_scale, 5)
             abs_diff = np.abs(self.image_data_gray_scale - low_passed)
             clipped = abs_diff * (abs_diff < np.percentile(abs_diff, 23))
-            scaled = clipped * (255.0 / np.max(clipped))
+            max_v = np.max(clipped)
+            scaled = clipped * (255.0 / max_v) if max_v else (clipped + 255.0)
             blurred = gaussian_filter(scaled, 10)
             self._low_freq_mask = (blurred > np.percentile(blurred, 50)).astype(np.uint8)
         return self._low_freq_mask
