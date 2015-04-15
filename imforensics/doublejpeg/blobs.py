@@ -84,4 +84,5 @@ def multiple_bfs(im):
 
 def find_max_blob_size(im_path):
     im = imread(im_path)
-    return multiple_bfs(im)
+    blob_size, area = multiple_bfs(im)
+    return float(blob_size) / float(area)
