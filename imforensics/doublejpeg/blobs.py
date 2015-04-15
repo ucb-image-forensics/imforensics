@@ -6,7 +6,7 @@ from scipy.misc import imread, imresize
 
 PointState = namedtuple('PointState', ['x', 'y'])
 
-INTENSITY_THRESHOLD = 25
+INTENSITY_THRESHOLD = 5
 
 POSITIONS = [
     (0, 1),
@@ -31,7 +31,7 @@ class Queue(object):
 
 
 def in_bounds(im, x, y, m):
-    return (0 <= x) and (x < im.shape[0]) and (0 <= y) and (y < im.shape[1]) and (im[x, y] >= m - 20)  
+    return (0 <= x) and (x < im.shape[0]) and (0 <= y) and (y < im.shape[1]) and (im[x, y] > m)  
 
 
 def get_successors(im, state, m):
@@ -47,7 +47,10 @@ def get_successors(im, state, m):
 def multiple_bfs(im):
     scale = float(500) / float(im.shape[0])
     im = imresize(im, scale)
-    m = np.max(im)
+
+    # Get all locations of highest value
+    max_value = np.max(im) - INTENSITY_THRESHOLD
+
     fringe = Queue()
     master_visited = set()
     # Need to randomly push a few random start states
@@ -60,15 +63,13 @@ def multiple_bfs(im):
         while not fringe.empty():
             state = fringe.pop()
             if state not in visited:
-                successors = get_successors(im, state, m)
+                successors = get_successors(im, state, max_value)
                 visited.add(state)
                 master_visited.add(state)
                 for s in successors:
                     fringe.push(s)
         return visited
 
-    # Get all locations of highest value
-    max_value = np.max(im) - INTENSITY_THRESHOLD
     
     X, Y = np.where(im > max_value)
     max_blob_size = -1
