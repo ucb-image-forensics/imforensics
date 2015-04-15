@@ -74,7 +74,7 @@ class ELA(object):
             max_v = np.max(clipped)
             scaled = clipped * (255.0 / max_v) if max_v else (clipped + 255.0)
             blurred = gaussian_filter(scaled, 10)
-            self._ela_mask = (blurred > 168).astype(np.uint8)
+            self._ela_mask = (blurred > np.mean(blurred)).astype(np.uint8)
         return self._ela_mask
 
     def save_suspect_region(self, opaque=False, show_low_freq=False, **kwargs):
