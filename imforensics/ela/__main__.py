@@ -62,7 +62,9 @@ def main():
     elif args.aggregate_metrics:
         generate_metrics(args.input, output_file)
     else:
-        ELA(args.input).save_suspect_region()
-
+        ela = ELA(args.input)
+        ela.save_suspect_region()
+        ela.save_ela_image()
+        
 if __name__ == '__main__':
     main()

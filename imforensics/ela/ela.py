@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, division
 
 import os
 
@@ -49,13 +49,16 @@ class ELA(object):
     @property
     def low_freq_mask(self):
         if not hasattr(self, '_low_freq_mask'):
-            low_passed = gaussian_filter(self.image_data_gray_scale, 5)
-            abs_diff = np.abs(self.image_data_gray_scale - low_passed)
-            clipped = abs_diff * (abs_diff < np.percentile(abs_diff, 23))
+            normalized = (self.image_data_gray_scale
+                          - np.mean(self.image_data_gray_scale)) \
+                         / np.std(self.image_data_gray_scale)
+            low_passed = gaussian_filter(normalized, 5)
+            abs_diff = np.abs(normalized - low_passed)
+            clipped = (abs_diff < 0.03).astype(np.float)
             max_v = np.max(clipped)
             scaled = clipped * (255.0 / max_v) if max_v else (clipped + 255.0)
-            blurred = gaussian_filter(scaled, 10)
-            self._low_freq_mask = (blurred > np.percentile(blurred, 50)).astype(np.uint8)
+            blurred = gaussian_filter(scaled, 2)
+            self._low_freq_mask = (blurred > 64).astype(np.uint8)
         return self._low_freq_mask
 
     @property
@@ -64,11 +67,14 @@ class ELA(object):
             ela_data_magnitude = np.sqrt(self.ela_data[:, :, 0]**2 +
                                          self.ela_data[:, :, 1]**2 +
                                          self.ela_data[:, :, 2]**2)
-            ela_mask = (ela_data_magnitude > np.percentile(ela_data_magnitude, 90))\
-                       .astype(np.uint8) * ela_data_magnitude
-            ela_mask = gaussian_filter(ela_mask, 10)
-            ela_mask = ela_mask * (255.0 / np.max(ela_mask))
-            self._ela_mask = (ela_mask > np.percentile(ela_mask, 70)).astype(np.uint8)
+            normalized = (ela_data_magnitude
+                          - np.mean(ela_data_magnitude)) \
+                         / np.std(ela_data_magnitude)
+            clipped = (normalized > 0.0).astype(np.float)
+            max_v = np.max(clipped)
+            scaled = clipped * (255.0 / max_v) if max_v else (clipped + 255.0)
+            blurred = gaussian_filter(scaled, 10)
+            self._ela_mask = (blurred > 168).astype(np.uint8)
         return self._ela_mask
 
     def save_suspect_region(self, opaque=False, show_low_freq=False, **kwargs):
