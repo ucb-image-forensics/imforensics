@@ -31,7 +31,7 @@ class Queue(object):
 
 
 def in_bounds(im, x, y, m):
-    return (0 <= x) and (x < im.shape[0]) and (0 <= y) and (y < im.shape[1]) and (im[x, y] > m)  
+    return (0 <= x) and (x < im.shape[0]) and (0 <= y) and (y < im.shape[1]) and (im[x, y] < m)
 
 
 def get_successors(im, state, m):
@@ -45,11 +45,11 @@ def get_successors(im, state, m):
 
 
 def multiple_bfs(im):
-    scale = float(500) / float(im.shape[0])
+    scale = float(500) / float(im.shape[1])
     im = imresize(im, scale)
 
     # Get all locations of highest value
-    max_value = np.max(im) - INTENSITY_THRESHOLD
+    max_value = 51
 
     fringe = Queue()
     master_visited = set()
@@ -71,7 +71,7 @@ def multiple_bfs(im):
         return visited
 
     
-    X, Y = np.where(im > max_value)
+    X, Y = np.where(im < max_value)
     max_blob_size = -1
     for idx in range(len(X)):
         # Get a random point from the high values to start with
