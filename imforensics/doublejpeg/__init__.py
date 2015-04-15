@@ -1,1 +1,2 @@
 from detector import DoubleJPEGCompressionDetector
+from blobs import find_max_blob_size
